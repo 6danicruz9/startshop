@@ -1,0 +1,20 @@
+Options -Indexes
+RewriteEngine On
+
+# Cabeceras de seguridad
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Bloquear acceso a archivos sensibles
+<FilesMatch "^(\.env|\.env\.example|composer\.json|startshop\.sql|database_extensions\.sql|seed_data\.sql)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Enrutamiento amigable hacia index.php manteniendo acceso a archivos estáticos reales
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]

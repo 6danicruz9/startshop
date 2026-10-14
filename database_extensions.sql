@@ -1,0 +1,174 @@
+SET NAMES utf8mb4;
+CREATE TABLE IF NOT EXISTS `ss_categories` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `slug` VARCHAR(120) NOT NULL UNIQUE,
+  `name_es` VARCHAR(120) NOT NULL,
+  `name_en` VARCHAR(120) NOT NULL,
+  `image_url` VARCHAR(255) DEFAULT NULL,
+  `featured` TINYINT(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `ss_products` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `category_id` INT UNSIGNED NOT NULL,
+  `sku` VARCHAR(64) NOT NULL UNIQUE,
+  `slug` VARCHAR(160) NOT NULL UNIQUE,
+  `brand` VARCHAR(80) NOT NULL,
+  `name_es` VARCHAR(180) NOT NULL,
+  `name_en` VARCHAR(180) NOT NULL,
+  `short_desc_es` VARCHAR(400) NOT NULL,
+  `short_desc_en` VARCHAR(400) NOT NULL,
+  `description_es` TEXT NOT NULL,
+  `description_en` TEXT NOT NULL,
+  `base_price` DECIMAL(10,2) NOT NULL,
+  `sale_price` DECIMAL(10,2) DEFAULT NULL,
+  `stock` INT NOT NULL DEFAULT 0,
+  `rating_avg` DECIMAL(3,2) NOT NULL DEFAULT 5.00,
+  `rating_count` INT UNSIGNED NOT NULL DEFAULT 1,
+  `is_featured` TINYINT(1) NOT NULL DEFAULT 1,
+  `is_new` TINYINT(1) NOT NULL DEFAULT 1,
+  `main_image` VARCHAR(255) NOT NULL,
+  `gallery_json` JSON DEFAULT NULL,
+  `specs_json` JSON DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `ss_product_variants` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `product_id` INT UNSIGNED NOT NULL,
+  `sku_variant` VARCHAR(80) NOT NULL UNIQUE,
+  `size` VARCHAR(32) NOT NULL,
+  `color_name` VARCHAR(48) NOT NULL,
+  `color_hex` CHAR(7) NOT NULL DEFAULT '#111111',
+  `price_delta` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `stock` INT NOT NULL DEFAULT 10,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `ss_users` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `email` VARCHAR(160) NOT NULL UNIQUE,
+  `password_hash` VARCHAR(255) DEFAULT NULL,
+  `full_name` VARCHAR(140) NOT NULL,
+  `phone` VARCHAR(32) DEFAULT NULL,
+  `role` ENUM('customer','admin') NOT NULL DEFAULT 'customer',
+  `oauth_provider` VARCHAR(32) DEFAULT NULL,
+  `oauth_uid` VARCHAR(128) DEFAULT NULL,
+  `magic_token` VARCHAR(128) DEFAULT NULL,
+  `magic_expires_at` DATETIME DEFAULT NULL,
+  `email_verified_at` DATETIME DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `ss_addresses` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` INT UNSIGNED NOT NULL,
+  `label` VARCHAR(60) NOT NULL DEFAULT 'Principal',
+  `recipient_name` VARCHAR(140) NOT NULL,
+  `line1` VARCHAR(200) NOT NULL,
+  `city` VARCHAR(100) NOT NULL,
+  `state` VARCHAR(100) NOT NULL,
+  `postal_code` VARCHAR(24) NOT NULL,
+  `country_code` CHAR(2) NOT NULL DEFAULT 'ES',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `ss_coupons` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `code` VARCHAR(40) NOT NULL UNIQUE,
+  `discount_type` ENUM('percent','fixed') NOT NULL DEFAULT 'percent',
+  `discount_value` DECIMAL(10,2) NOT NULL,
+  `min_order_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `expires_at` DATETIME DEFAULT NULL,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `ss_orders` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `order_number` VARCHAR(40) NOT NULL UNIQUE,
+  `user_id` INT UNSIGNED DEFAULT NULL,
+  `guest_email` VARCHAR(160) DEFAULT NULL,
+  `status` ENUM('pending','paid','processing','shipped','delivered','cancelled','refunded') NOT NULL DEFAULT 'paid',
+  `currency` CHAR(3) NOT NULL DEFAULT 'EUR',
+  `exchange_rate` DECIMAL(10,4) NOT NULL DEFAULT 1.0000,
+  `subtotal` DECIMAL(10,2) NOT NULL,
+  `discount_total` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `shipping_total` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `tax_total` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `grand_total` DECIMAL(10,2) NOT NULL,
+  `coupon_code` VARCHAR(40) DEFAULT NULL,
+  `shipping_method` VARCHAR(64) NOT NULL DEFAULT 'express',
+  `shipping_address_json` JSON NOT NULL,
+  `payment_method` VARCHAR(32) NOT NULL DEFAULT 'stripe',
+  `payment_intent_id` VARCHAR(128) DEFAULT NULL,
+  `idempotency_key` VARCHAR(128) NOT NULL UNIQUE,
+  `tracking_number` VARCHAR(80) DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `ss_order_items` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `order_id` INT UNSIGNED NOT NULL,
+  `product_id` INT UNSIGNED NOT NULL,
+  `variant_id` INT UNSIGNED DEFAULT NULL,
+  `product_name` VARCHAR(180) NOT NULL,
+  `variant_label` VARCHAR(80) DEFAULT NULL,
+  `unit_price` DECIMAL(10,2) NOT NULL,
+  `quantity` INT UNSIGNED NOT NULL,
+  `line_total` DECIMAL(10,2) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `ss_returns` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `order_id` INT UNSIGNED NOT NULL,
+  `user_id` INT UNSIGNED DEFAULT NULL,
+  `reason` VARCHAR(255) NOT NULL,
+  `status` VARCHAR(32) NOT NULL DEFAULT 'requested',
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `ss_reviews` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `product_id` INT UNSIGNED NOT NULL,
+  `user_id` INT UNSIGNED DEFAULT NULL,
+  `author_name` VARCHAR(120) NOT NULL,
+  `rating` TINYINT UNSIGNED NOT NULL DEFAULT 5,
+  `title` VARCHAR(160) NOT NULL,
+  `comment` TEXT NOT NULL,
+  `photos_json` JSON DEFAULT NULL,
+  `verified_purchase` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `ss_wishlist` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` INT UNSIGNED DEFAULT NULL,
+  `session_id` VARCHAR(128) NOT NULL,
+  `product_id` INT UNSIGNED NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_wish` (`session_id`, `product_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `ss_newsletter` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `email` VARCHAR(160) NOT NULL UNIQUE,
+  `locale` CHAR(2) NOT NULL DEFAULT 'es',
+  `subscribed_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `ss_rate_limits` (
+  `ip_hash` CHAR(64) NOT NULL,
+  `endpoint` VARCHAR(64) NOT NULL,
+  `hits` INT UNSIGNED NOT NULL DEFAULT 1,
+  `window_start` INT UNSIGNED NOT NULL,
+  PRIMARY KEY (`ip_hash`, `endpoint`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

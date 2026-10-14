@@ -1,22 +1,33 @@
 <?php
-// Archivo de conexión a la base de datos, usando MySQLi (PHP 7+)
+declare(strict_types=1);
+require_once __DIR__ . '/config/env.php';
 
-// 1. Definir las credenciales de la base de datos
-$db_host = "localhost";   // Servidor
-$db_usuario = "root";     // Usuario de la BD
-$db_pass = "";            // Contraseña (en XAMPP por defecto es vacía)
-$db_nombre = "startshop"; // Nombre de tu base de datos
+$servidor  = (string) env('DB_HOST', '127.0.0.1');
+$puerto    = (int) env('DB_PORT', 3306);
+$usuario   = (string) env('DB_USERNAME', 'root');
+$password  = (string) env('DB_PASSWORD', '');
+$basedatos = (string) env('DB_DATABASE', 'startshop');
 
-// 2. Crear la conexión
-$conexion = new mysqli($db_host, $db_usuario, $db_pass, $db_nombre);
-
-// 3. Verificar si hubo un error en la conexión
-if ($conexion->connect_error) {
-    die("Error de conexión: " . $conexion->connect_error);
+$conexion = @new mysqli($servidor, $usuario, $password, $basedatos, $puerto);
+if (!$conexion->connect_error) {
+    $conexion->set_charset('utf8mb4');
 }
 
-// 4. Establecer el juego de caracteres a UTF-8
-if (!$conexion->set_charset("utf8mb4")) {
-    die("Error al cargar el set de caracteres utf8mb4: " . $conexion->error);
+class Database {
+    private static ?PDO $pdo = null;
+    public static function getConnection(): PDO {
+        if (self::$pdo === null) {
+            $host = (string) env('DB_HOST', '127.0.0.1');
+            $port = (int) env('DB_PORT', 3306);
+            $db   = (string) env('DB_DATABASE', 'startshop');
+            $user = (string) env('DB_USERNAME', 'root');
+            $pass = (string) env('DB_PASSWORD', '');
+            self::$pdo = new PDO("mysql:host={$host};port={$port};dbname={$db};charset=utf8mb4", $user, $pass, [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => false,
+            ]);
+        }
+        return self::$pdo;
+    }
 }
-?>

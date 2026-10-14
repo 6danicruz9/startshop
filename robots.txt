@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /config/
+Disallow: /includes/
+Sitemap: http://localhost/startshop-bac867b5978f880b0ebdb4d6261a95315f3df2a8/sitemap.xml.php
