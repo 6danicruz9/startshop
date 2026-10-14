@@ -1,22 +1,64 @@
 <?php
-// Archivo de conexión a la base de datos, usando MySQLi (PHP 7+)
+declare(strict_types=1);
 
-// 1. Definir las credenciales de la base de datos
-$db_host = "localhost";   // Servidor
-$db_usuario = "root";     // Usuario de la BD
-$db_pass = "";            // Contraseña (en XAMPP por defecto es vacía)
-$db_nombre = "startshop"; // Nombre de tu base de datos
+require_once __DIR__ . '/config/bootstrap.php';
 
-// 2. Crear la conexión
-$conexion = new mysqli($db_host, $db_usuario, $db_pass, $db_nombre);
-
-// 3. Verificar si hubo un error en la conexión
-if ($conexion->connect_error) {
-    die("Error de conexión: " . $conexion->connect_error);
+mysqli_report(MYSQLI_REPORT_OFF);
+$conexion = @new mysqli(
+    (string) env('DB_HOST', '127.0.0.1'),
+    (string) env('DB_USERNAME', 'root'),
+    (string) env('DB_PASSWORD', ''),
+    (string) env('DB_DATABASE', 'startshop'),
+    (int) env('DB_PORT', 3306)
+);
+if (!$conexion->connect_error) {
+    $conexion->set_charset('utf8mb4');
 }
 
-// 4. Establecer el juego de caracteres a UTF-8
-if (!$conexion->set_charset("utf8mb4")) {
-    die("Error al cargar el set de caracteres utf8mb4: " . $conexion->error);
+class Database
+{
+    private static ?PDO $pdo = null;
+
+    public static function getConnection(): PDO
+    {
+        if (self::$pdo === null) {
+            $dsn = sprintf(
+                'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+                (string) env('DB_HOST', '127.0.0.1'),
+                (int) env('DB_PORT', 3306),
+                (string) env('DB_DATABASE', 'startshop')
+            );
+            self::$pdo = new PDO($dsn, (string) env('DB_USERNAME', 'root'), (string) env('DB_PASSWORD', ''), [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => false,
+                PDO::ATTR_TIMEOUT            => 5,
+                PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4, time_zone = '+00:00', sql_mode = 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'",
+            ]);
+        }
+        return self::$pdo;
+    }
+
+    public static function transaction(callable $fn): mixed
+    {
+        $pdo = self::getConnection();
+        if ($pdo->inTransaction()) {
+            return $fn($pdo);
+        }
+        $pdo->beginTransaction();
+        try {
+            $result = $fn($pdo);
+            $pdo->commit();
+            return $result;
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
 }
-?>
+```
+
+`storage/logs/.gitkeep`
+```
